@@ -30,9 +30,9 @@
 
 - Redux middleware
 
-- Listen for actions, dispatches other actions, (using effects)
+- Manages side effects (API, DB, logs, etc.)
 
-- Interact with external APIs
+- Listen for actions, dispatches other actions, (using effects)
 
 - Maintains continuously running process called sagas
 
@@ -184,3 +184,71 @@ function* logEachSecond() {
 ```
 
 TODO: Test example
+
+# Effects
+
+- call
+
+- put
+
+- select
+
+## takeEvery
+```js
+import { takeEvery } from "redux-saga/effects";
+
+function* handleActionA(action) {
+    // ...
+}
+
+function* watchActions() {
+    yield takeEvery('ACTION_A', handleActionA);
+}
+```
+
+## takeLatest
+```js
+import { takeLatest } from "redux-saga/effects";
+
+function* handleActionA(action) {
+    // ...
+}
+
+function* watchActions() {
+    yield takeLatest('ACTION_A', handleActionA);
+}
+
+```
+- take
+
+- race
+
+- all
+
+## throttle
+
+```js
+function* handleInput(input) {
+    // ...
+}
+
+function* watchInput() {
+    yield throttle(500, 'INPUT_CHANGED', handleInput);
+}
+```
+
+## actionChannel
+
+```js
+import { actionChannel, take, call } from "redux-saga/effects";
+
+function* queueActions() {
+    const channel = yield actionChannel("ACTION_KEY");
+
+    while(true) {
+        const action = yield take(channel);
+        yield call(api, URL);
+        // ...
+    }
+}
+```
