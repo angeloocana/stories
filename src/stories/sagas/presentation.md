@@ -98,7 +98,7 @@ Code tends to grow vertically with additional "then" calls
     .then(dataC => {
         // ...
     });
-    
+
     // code after ".then()" runs before all promises resolutions
 ```
 
@@ -131,15 +131,19 @@ Code is always compact
 
 - Easiest to read quickly, reason about
 
+- Avoids circular dependency
+
 - Easier to debug
 
 - Execution stops on unhandled error
+
 
 ## Disadvantages of yield
 
 - Only works inside Generator Functions
 
 - Requires additional plugins
+
 
 # What is a Generator Function?
 
@@ -170,7 +174,10 @@ Code is always compact
     const data = gen.next(1, 2).value;
 ```
 
+
 # Continuously running process example
+
+Sagas can run forever
 
 ```js
 import { delay } from "redux-saga";
@@ -183,17 +190,68 @@ function* logEachSecond() {
 }
 ```
 
-TODO: Test example
 
 # Effects
 
-- call
+functions that returns a plain JavaScript object and does not perform any execution.
 
-- put
+- The execution is performed by the middleware during the Iteration process.
 
-- select
+- The middleware examines each Effect description and performs the appropriate action.
+
+
+## select, call and put
+
+select: gets a value from the store
+
+call: calls any function, most used for side-effects
+
+put: dispatches one action to the store
+
+```js
+import { select, call, put } from "redux-saga/effects";
+import * as actions from "../actions";
+import api from "../api";
+
+function getWorksheet(worksheetId) {
+    const filters = yield select(state => state.filters[worksheetId]);
+
+    const data = yield call(api.getWorksheet, { worksheetId, filters });
+
+    yield put(actions.setWorksheet(data));
+}
+```
+
+TODO: Test example
+
+```js
+
+```
+
+### Handle errors with Try Catch
+
+```js
+import { select, call, put } from "redux-saga/effects";
+import * as actions from "../actions";
+import api from "../api";
+
+function getWorksheet(worksheetId) {
+    try{
+        const filters = yield select(state => state.filters[worksheetId]);
+
+        const data = yield call(api.getWorksheet, { worksheetId, filters });
+
+        yield put(actions.setWorksheet(data));
+    } catch (error) {
+        yield put(actions.logError(error));
+    }
+}
+```
 
 ## takeEvery
+
+starts a saga for all dispatched actions.
+
 ```js
 import { takeEvery } from "redux-saga/effects";
 
@@ -206,7 +264,11 @@ function* watchActions() {
 }
 ```
 
+
 ## takeLatest
+
+cancels the current Saga if it is running and starts the latest dispatched action.
+
 ```js
 import { takeLatest } from "redux-saga/effects";
 
@@ -217,15 +279,30 @@ function* handleActionA(action) {
 function* watchActions() {
     yield takeLatest('ACTION_A', handleActionA);
 }
+```
+
+
+## race
+
+Returns when the first yield returns.
+
+```js
 
 ```
-- take
 
-- race
 
-- all
+## all
+
+waits all yield to return.
+
+```js
+
+```
+
 
 ## throttle
+
+Throttle ensures that the Saga will take at most one action during each period of specified time. 
 
 ```js
 function* handleInput(input) {
@@ -237,17 +314,53 @@ function* watchInput() {
 }
 ```
 
-## actionChannel
+
+## take
+
+Take waits until it gets the desired action.
+
+```js
+import { put, take, call } from "redux-saga/effects";
+import actions from "../actions";
+import api from "../api";
+
+function* removeUser(user) {
+    yield put(actions.confirmRemoveUser(user));
+
+    yield take("CONFIRM_OK");
+
+    yield call(api.removeUser, user);
+}
+```
 
 ```js
 import { actionChannel, take, call } from "redux-saga/effects";
+import api from "../api";
 
 function* queueActions() {
-    const channel = yield actionChannel("ACTION_KEY");
+    while(true) {
+        const action = yield take("LOG_ERROR");
+        yield call(api.log, action);
+        // ...
+    }
+}
+```
+
+
+## actionChannel
+
+Creates a queue of actions, you don't lose any action and you can process one by one.
+
+```js
+import { actionChannel, take, call } from "redux-saga/effects";
+import api from "../api";
+
+function* queueActions() {
+    const channel = yield actionChannel("LOG_ERROR");
 
     while(true) {
         const action = yield take(channel);
-        yield call(api, URL);
+        yield call(api.log, action);
         // ...
     }
 }
